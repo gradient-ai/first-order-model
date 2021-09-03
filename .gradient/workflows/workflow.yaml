@@ -1,0 +1,82 @@
+on:
+  github:
+    branches:
+      only: main
+
+jobs:
+  PrepareModel:
+    resources:
+      instance-type: C3
+    outputs:
+      model:
+        type: dataset
+        with:
+          ref: model
+    uses: script@v1
+    with:
+      script: |-
+        pip install gdown 
+        gdown https://drive.google.com/uc?id=1L8P-hpBhZi8Q_1vP2KlQ4N6dvlzpYBvZ -O /outputs/model/vox.pt
+      image: python:3.8
+  ValidateModel:
+    needs:
+      - PrepareModel
+    resources:
+      instance-type: P5000
+    inputs:
+      model: PrepareModel.outputs.model
+      assets:
+        type: dataset
+        with:
+          ref: test-assets
+    outputs:
+      results:
+        type: dataset
+        with:
+          ref: test-results
+    uses: script@v1
+    with:
+      script: |-
+        python3 demo.py --relative --adapt_scale \
+          --config config/vox-256.yaml \
+          --checkpoint /inputs/model/vox.pt \
+          --driving_video /inputs/assets/driving.mp4 \
+          --source_image /inputs/assets/face.png \
+          --result_video /outputs/videos/result.mp4
+      image: paperspace/first-order-model
+  # RunModel:
+  #   resources:
+  #     instance-type: P5000
+  #   needs:
+  #     - DownloadWeights
+  #     - CloneRepo
+  #   inputs:
+  #     repo: CloneRepo.outputs.repo
+  #     model: DownloadWeights.outputs.model
+  #     assets:
+  #       type: dataset
+  #       with:
+  #         ref: test-assets
+  #   outputs:
+  #     videos:
+  #       type: dataset
+  #       with:
+  #         ref: test-results
+  #   uses: script@v1
+  #   with:
+  #     script: |-
+  #       cp -r /inputs/repo/ repo/
+  #       cd repo/
+  #       DEBIAN_FRONTEND=noninteractive apt-get -qq update \
+  #         && DEBIAN_FRONTEND=noninteractive apt-get -qqy install python3-pip
+  #       pip3 install --upgrade pip
+  #       pip3 install \
+  #         https://download.pytorch.org/whl/cu100/torch-1.0.0-cp36-cp36m-linux_x86_64.whl \
+  #         -r requirements.txt
+  #       python3 demo.py --config config/vox-256.yaml \
+  #         --checkpoint /inputs/model/vox.pt \
+  #         --relative --adapt_scale \
+  #         --driving_video /inputs/assets/driving.mp4 \
+  #         --source_image /inputs/assets/face.png \
+  #         --result_video /outputs/videos/result.mp4
+  #     image: nvcr.io/nvidia/cuda:10.0-cudnn7-runtime-ubuntu18.04
