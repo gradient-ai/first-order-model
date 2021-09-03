@@ -44,6 +44,7 @@ jobs:
           --source_image /inputs/assets/face.png \
           --result_video /outputs/videos/result.mp4
       image: paperspace/first-order-model
+
   # RunModel:
   #   resources:
   #     instance-type: P5000
