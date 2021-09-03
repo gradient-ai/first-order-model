@@ -42,7 +42,7 @@ jobs:
           --checkpoint /inputs/model/vox.pt \
           --driving_video /inputs/assets/driving.mp4 \
           --source_image /inputs/assets/face.png \
-          --result_video /outputs/videos/result.mp4
+          --result_video /outputs/results/adoro.mp4
       image: paperspace/first-order-model
 
   # RunModel:
