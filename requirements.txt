@@ -13,3 +13,4 @@ torchvision==0.2.1
 tqdm==4.24.0
 fastapi==0.68.1
 uvicorn[standard]==0.15.0
+aiofiles==0.7.0

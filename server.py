@@ -1,5 +1,5 @@
 # Model Setup
-from os import env
+from os import environ as env
 
 import imageio
 
