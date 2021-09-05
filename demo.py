@@ -59,7 +59,7 @@ def make_animation(
     generator,
     kp_detector,
     relative=True,
-    adapt_movement_scale=True,
+    adapt_movement_scale=False,
     cpu=False,
 ):
     with torch.no_grad():
