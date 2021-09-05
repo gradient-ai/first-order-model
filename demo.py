@@ -63,23 +63,18 @@ def make_animation(
     cpu=False,
 ):
     with torch.no_grad():
-        predictions = []
         source = torch.tensor(source_image[np.newaxis].astype(np.float32)).permute(
             0, 3, 1, 2
-        )
-        if not cpu:
-            source = source.cuda()
+        ).cuda()
 
         driving = torch.tensor(
             np.array(driving_video)[np.newaxis].astype(np.float32)
-        ).permute(0, 4, 1, 2, 3)
+        ).permute(0, 4, 1, 2, 3).cuda()
         kp_source = kp_detector(source)
         kp_driving_initial = kp_detector(driving[:, :, 0])
 
         for frame_idx in range(driving.shape[2]):
             driving_frame = driving[:, :, frame_idx]
-            if not cpu:
-                driving_frame = driving_frame.cuda()
             kp_driving = kp_detector(driving_frame)
             kp_norm = normalize_kp(
                 kp_source=kp_source,
@@ -91,10 +86,7 @@ def make_animation(
             )
             out = generator(source, kp_source=kp_source, kp_driving=kp_norm)
 
-            predictions.append(
-                np.transpose(out["prediction"].data.cpu().numpy(), [0, 2, 3, 1])[0]
-            )
-    return predictions
+            yield np.transpose(out["prediction"].data.cpu().numpy(), [0, 2, 3, 1])[0]
 
 
 def find_best_frame(source, driving, cpu=False):

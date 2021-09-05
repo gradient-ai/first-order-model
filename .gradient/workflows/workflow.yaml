@@ -16,7 +16,7 @@ jobs:
     with:
       script: |-
         pip install gdown 
-        gdown https://drive.google.com/uc?id=1L8P-hpBhZi8Q_1vP2KlQ4N6dvlzpYBvZ -O /outputs/model/vox.pt
+        gdown https://drive.google.com/uc?id=1_v_xW1V52gZCZnXgh1Ap_gwA9YVIzUnS -O /outputs/model/vox.pt
       image: python:3.8
   ValidateModel:
     needs:

@@ -1,27 +1,58 @@
 # Model Setup
+import io
+import os
+
+from base64 import b64decode
 from os import environ as env
 
 import imageio
+import skimage.io
 
 from skimage.transform import resize
 from skimage import img_as_ubyte
 
 from demo import load_checkpoints, make_animation
 
-gen, kp = load_checkpoints("config/vox-adv-256.yaml", env["CHECKPOINT_PATH"])
+gen, kp = load_checkpoints("config/vox-256.yaml", env["CHECKPOINT_PATH"])
 
 _video_reader = imageio.get_reader(env["DRIVING_VIDEO_PATH"])
 
 fps = _video_reader.get_meta_data()["fps"]
 driving_video = [resize(frame, (256, 256))[..., :3] for frame in _video_reader]
 
-# API Server
-from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 
+def generate_adoro(from_image: str, base_path: str):
+    _, base64 = from_image.split(",")
+    image = skimage.io.imread(b64decode(base64), plugin="imageio")
+    source_image = resize(image, (256, 256))[..., :3]
+    os.makedirs(base_path, exist_ok=True)
+    frames = []
+    for index, frame in enumerate(make_animation(source_image, driving_video, gen, kp)):
+        frame_bytes = img_as_ubyte(frame)
+        imageio.imwrite(f"{base_path}/{index}.jpg", frame_bytes)
+        frames.append(frame_bytes)
+    imageio.mimsave(f"{base_path}.mp4", frames, fps=fps)
+
+# API Server
+from fastapi import FastAPI, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 app = FastAPI()
 app.mount("/public", StaticFiles(directory="public"), name="static_files")
+
+origins = [
+    "http://localhost:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/question")
@@ -29,14 +60,16 @@ def question():
     return {"answer": 42}
 
 
+class CreateAdoroRequest(BaseModel):
+    image: str
+
+
 @app.post("/adoro")
-def adoro(reference_png_base64: str):
-    source_image = imageio.imread(reference_png_base64)
-    source_image = resize(source_image, (256, 256))[..., :3]
-    frames = [
-        img_as_ubyte(frame)
-        for frame in make_animation(source_image, driving_video, gen, kp)
-    ]
-    output_path = "public/result.mp4"
-    imageio.mimsave(output_path, frames, fps=fps)
-    return {"path": output_path}
+def adoro(params: CreateAdoroRequest, background_tasks: BackgroundTasks):
+    base_path = f"public/{hash(params.image)}"
+    background_tasks.add_task(
+        generate_adoro,
+        from_image=params.image,
+        base_path=base_path,
+    )
+    return {"path": base_path, "frames": len(driving_video)}
