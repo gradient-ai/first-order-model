@@ -194,7 +194,7 @@ if __name__ == "__main__":
         print("Best frame: " + str(i))
         driving_forward = driving_video[i:]
         driving_backward = driving_video[: (i + 1)][::-1]
-        predictions_forward = make_animation(
+        predictions_forward = list(make_animation(
             source_image,
             driving_forward,
             generator,
@@ -202,8 +202,8 @@ if __name__ == "__main__":
             relative=opt.relative,
             adapt_movement_scale=opt.adapt_scale,
             cpu=opt.cpu,
-        )
-        predictions_backward = make_animation(
+        ))
+        predictions_backward = list(make_animation(
             source_image,
             driving_backward,
             generator,
@@ -211,7 +211,7 @@ if __name__ == "__main__":
             relative=opt.relative,
             adapt_movement_scale=opt.adapt_scale,
             cpu=opt.cpu,
-        )
+        ))
         predictions = predictions_backward[::-1] + predictions_forward[1:]
     else:
         predictions = make_animation(
