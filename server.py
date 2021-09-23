@@ -27,8 +27,10 @@ except RuntimeError:
     pass
 _video_reader.close()
 
+audio_path = env["AUDIO"]
+watermark_path = env["WATERMARK"]
 
-def generate_adoro(from_image: str, base_path: str, watermark_path: str):
+def generate_adoro(from_image: str, base_path: str):
     _, base64 = from_image.split(",")
     image = skimage.io.imread(b64decode(base64), plugin="imageio")
     source_image = resize(image, (256, 256))[..., :3]
@@ -43,13 +45,13 @@ def generate_adoro(from_image: str, base_path: str, watermark_path: str):
     imageio.mimsave(generated_video_path, frames, fps=fps)
 
     video_in = f"""-an -i '{generated_video_path}'"""
-    audio_in = f"""-vn -i '{audio_path}'"""
     watermark_in = f"""-an -i '{watermark_path}'"""
-    processing = f"""-map 0:v -map 1:a -filter_complex '[0:v][2:v]overlay=156:12'"""
+    audio_in = f"""-vn -i '{audio_path}'"""
+    processing = f"""-map 0:v -map 2:a -filter_complex '[0:v][1:v]overlay=156:12'"""
     video_out = f"'{base_path}.mp4'"
     subprocess.run(
         f"""
-        ffmpeg {video_in} {audio_in} {watermark_in} {processing} -y -shortest {video_out}
+        ffmpeg {video_in} {watermark_in} {audio_in} {processing} -y -shortest {video_out}
         """,
         check=True, shell=True, timeout=60)
 
@@ -61,15 +63,11 @@ from pydantic import BaseModel
 
 app = FastAPI()
 app.mount("/public", StaticFiles(directory="public"), name="static_files")
-app.mount("/", StaticFiles(directory="web", html=True), name="web")
-
-origins = [
-    "*",
-]
+app.mount("/app", StaticFiles(directory="web", html=True), name="web")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -87,10 +85,11 @@ class CreateAdoroRequest(BaseModel):
 
 @app.post("/adoro")
 def adoro(params: CreateAdoroRequest, background_tasks: BackgroundTasks):
-    base_path = f"public/{hash(params.image)}"
+    image = params.image
+    base_path = f"public/{hash(image)}"
     background_tasks.add_task(
         generate_adoro,
-        from_image=params.image,
+        from_image=image,
         base_path=base_path,
     )
     return {"path": base_path, "frames": len(driving_video)}
