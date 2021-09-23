@@ -28,7 +28,7 @@ except RuntimeError:
 _video_reader.close()
 
 
-def generate_adoro(from_image: str, base_path: str):
+def generate_adoro(from_image: str, base_path: str, watermark_path: str):
     _, base64 = from_image.split(",")
     image = skimage.io.imread(b64decode(base64), plugin="imageio")
     source_image = resize(image, (256, 256))[..., :3]
