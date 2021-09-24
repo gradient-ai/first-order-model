@@ -14,4 +14,13 @@ RUN pip3 install \
   https://download.pytorch.org/whl/cu100/torch-1.0.0-cp36-cp36m-linux_x86_64.whl \
   -r requirements.txt
 
+
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+ENV MODEL=/app/vox.pt
+ENV DRIVING_VIDEO=/app/driving.mp4
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt update && apt-get install python3-tk -y
+
 COPY . /app/
