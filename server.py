@@ -62,8 +62,6 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 app = FastAPI()
-app.mount("/public", StaticFiles(directory="public"), name="static_files")
-app.mount("/app", StaticFiles(directory="web", html=True), name="web")
 
 app.add_middleware(
     CORSMiddleware,
@@ -93,3 +91,7 @@ def adoro(params: CreateAdoroRequest, background_tasks: BackgroundTasks):
         base_path=base_path,
     )
     return {"path": base_path, "frames": len(driving_video)}
+
+
+app.mount("/public", StaticFiles(directory="public"), name="static_files")
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
